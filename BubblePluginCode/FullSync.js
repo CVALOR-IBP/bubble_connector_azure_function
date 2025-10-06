@@ -1,3 +1,4 @@
+// Last updated: October 6, 2023
 async function(properties, context) {
     const axios = require("axios").default
     let app_version = properties.one_record._call_metadata.app_version;

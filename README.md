@@ -3,8 +3,14 @@
 ## Repository Status & Branch Information
 
 **Current Repository**: `bubble_connector_azure_function`  
+**Current Branch**: `main`  
 **Latest Update**: October 6, 2023  
 **Repository Type**: Azure Functions application for real-time Bubble to Snowflake synchronization
+
+### Branch Information
+- **Current Branch**: `main` - Production-ready Azure Functions application
+- **Other Branches**: None (single branch repository)
+- **Branch Differences**: This is the only branch containing the complete Azure Functions implementation
 
 ## Overview
 
@@ -20,6 +26,28 @@ The **Bubble Connector Azure Function** serves as a **cloud-based microservice**
 - **Event-driven Processing**: Triggered by Bubble record changes
 - **Schema Management**: Automatic table creation and schema updates
 
+## Key Design Decisions & Technical Specifications
+
+### Architecture Decisions
+1. **Azure Functions over standalone scripts**: Chose serverless architecture for scalability and cloud hosting
+2. **HTTP API approach**: Implemented RESTful endpoints for better integration with Bubble plugins
+3. **Dynamic schema management**: Tables are created automatically based on data structure
+4. **Environment-based schema separation**: DEV vs LIVE schemas for development and production data
+5. **Temporary table strategy**: Uses temporary tables for full sync operations to ensure data consistency
+
+### Technical Implementation Details
+- **Record Change Detection**: Uses before/after record comparison to determine INSERT/UPDATE/DELETE operations
+- **Column Name Sanitization**: Automatically converts special characters to underscores for Snowflake compatibility
+- **Error Handling**: Comprehensive logging and graceful error responses
+- **Connection Management**: Direct Snowflake connections per request (stateless design)
+- **Data Type Handling**: All fields stored as VARCHAR for maximum flexibility
+
+### Performance Considerations
+- **Stateless Functions**: Each request is independent for better scalability
+- **Batch Operations**: Full sync uses temporary tables for efficient bulk operations
+- **Connection Pooling**: Relies on Azure Functions runtime for connection management
+- **Logging**: Application Insights integration for monitoring and debugging
+
 ## Architecture & Data Flow
 
 ```
@@ -32,13 +60,17 @@ Bubble.io Application → HTTP API → Azure Functions → Snowflake Database
 
 This repository uses the following technologies:
 
-- **Azure Functions** - Cloud serverless compute platform
-- **Python 3.11** - Runtime environment
-- **snowflake-connector-python** - Snowflake database connectivity
-- **azure-functions** - Azure Functions SDK
-- **JavaScript** - Bubble plugin integration code
+- **Azure Functions** - Cloud serverless compute platform for hosting HTTP endpoints
+- **Python 3.11** - Runtime environment for the Azure Functions
+- **snowflake-connector-python** - Snowflake database connectivity library
+- **azure-functions** - Azure Functions SDK for Python
+- **JavaScript** - Bubble plugin integration code for real-time triggers
+- **JSON** - Data exchange format between Bubble and Azure Functions
+- **HTTP/REST** - API communication protocol
 
-**Application Type**: Azure Functions microservice for real-time data synchronization
+**Application Type**: Azure Functions microservice for real-time data synchronization  
+**Hosting Platform**: Microsoft Azure (Azure Functions)  
+**Target Database**: Snowflake Data Warehouse
 
 ## External Dependencies
 
@@ -86,6 +118,16 @@ bubble_connector_azure_function/
 │   └── RecordUpdate.js             # Individual record update plugin
 └── 📄 README.md                    # 📖 This documentation
 ```
+
+### File Last Updated Dates
+- **function_app.py**: October 6, 2023
+- **requirements.txt**: October 6, 2023  
+- **host.json**: October 6, 2023
+- **BubblePluginCode/FullSync.js**: October 6, 2023
+- **BubblePluginCode/RecordUpdate.js**: October 6, 2023
+- **README.md**: October 6, 2023
+
+**Latest Update Across All Files**: October 6, 2023
 
 ### Core Application Files
 
@@ -165,6 +207,7 @@ bubble_connector_azure_function/
 2. **Snowflake account** with appropriate permissions
 3. **Bubble.io application** with API access
 4. **Azure Functions Core Tools** installed locally
+5. **Python 3.11** installed on your development machine
 
 ### Installation & Setup
 
@@ -190,7 +233,24 @@ bubble_connector_azure_function/
    pip install -r requirements.txt
    ```
 
-4. **Configure environment variables**
+4. **Install Azure Functions Core Tools** (if not already installed)
+   ```bash
+   # On macOS with Homebrew
+   brew tap azure/functions
+   brew install azure-functions-core-tools@4
+   
+   # On Windows with Chocolatey
+   choco install azure-functions-core-tools-4
+   
+   # On Linux
+   curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg
+   sudo mv microsoft.gpg /etc/apt/trusted.gpg.d/microsoft.gpg
+   sudo sh -c 'echo "deb [arch=amd64] https://packages.microsoft.com/repos/microsoft-ubuntu-$(lsb_release -cs)-prod $(lsb_release -cs) main" > /etc/apt/sources.list.d/dotnetdev.list'
+   sudo apt-get update
+   sudo apt-get install azure-functions-core-tools-4
+   ```
+
+5. **Configure environment variables**
    ```bash
    # Set up local.settings.json for local development
    {
@@ -207,14 +267,42 @@ bubble_connector_azure_function/
    }
    ```
 
-5. **Run locally**
+6. **Run locally**
    ```bash
    func start
    ```
 
-6. **Deploy to Azure**
+7. **Deploy to Azure**
    ```bash
    func azure functionapp publish <your-function-app-name>
+   ```
+
+### New Machine Setup
+
+To set up this repository on a new machine:
+
+1. **Install Prerequisites**:
+   - Python 3.11
+   - Azure Functions Core Tools v4
+   - Git
+
+2. **Clone and Setup**:
+   ```bash
+   git clone <repository-url>
+   cd bubble_connector_azure_function
+   python3.11 -m venv .venv
+   source .venv/bin/activate  # On macOS/Linux
+   pip install -r requirements.txt
+   ```
+
+3. **Configure Environment**:
+   - Set up `local.settings.json` with your Snowflake credentials
+   - Configure Azure CLI if deploying: `az login`
+
+4. **Test Locally**:
+   ```bash
+   func start
+   # Test endpoints at http://localhost:7071/api/recordchange and /api/fulltablesync
    ```
 
 ## Configuration
